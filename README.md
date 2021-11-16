@@ -4,4 +4,5 @@ Criação de sensor para o Home Assistant para decidir **abertura** / **fecho** 
   - Temperatura e humidade alvo
   - Temperatura e humidade interna
   - Temperatura e humidade externa
-Notas: Há código duplicado para condições diferentes, o objectivo será fazer depois diferenciação.
+
+*Notas: Há código igual para condições diferentes, o objectivo será fazer depois diferenciação com mais condições.
