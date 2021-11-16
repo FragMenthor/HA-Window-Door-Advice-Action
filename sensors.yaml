@@ -1,0 +1,122 @@
+- platform: template
+  sensors:
+
+    conselho_porta_cozinha:
+      friendly_name: Conselho - Porta da Cozinha
+      value_template: >-
+        {% set temp_alvo = 22.0 %}
+        {% set humid_alvo = 55.0 %}
+        {% set temp_tolerancia_max = 8.0 %}
+        {% set humid_tolerancia_max = 16.0 %}
+        {% set temp_fora = state_attr('weather.casa_da_soeira','temperature')|float(default=0) %}
+        {% set humid_fora = state_attr('weather.casa_da_soeira','humidity')|float(default=0) %}
+        {% set temp_dentro = states('sensor.ambiente_sala_temperature')|float(default=0) %}
+        {% set humid_dentro = states('sensor.ambiente_sala_humidity')|float(default=0) %}
+        {% set abrir = "ABRIR" %}
+        {% set fechar = "FECHAR" %}
+        {% set indiferente = "Indiferente" %}
+        {## RESULTADO: Conselho: "Indiferente","ABRIR","FECHAR" ##}
+        {% set conselho = indiferente %}
+        
+        {## LÓGICA: ##}
+        {% if temp_fora < temp_alvo %} {## Mais FRIO no Exterior ##}
+          {% if (temp_alvo - temp_fora) >= temp_tolerancia_max %} {## Mais de DTMAX frio ##}
+            {% if temp_fora <= temp_dentro %}
+              {% if temp_dentro - temp_fora >= (temp_tolerancia_max / 2) %}
+                {% set conselho = fechar %}
+              {% else %}
+                {% set conselho = indiferente %}
+              {% endif %}
+            {% else %}
+              {% if temp_fora - temp_dentro >= (temp_tolerancia_max / 2) %}
+                {% set conselho = abrir %}
+              {% else %}
+                {% set conselho = indiferente %}
+              {% endif %}
+            {% endif %}
+          {% elif (temp_alvo - temp_fora) >= (temp_tolerancia_max / 2) %} {## Entre DTMIN e DTMAX frio ##}
+            {% if temp_fora <= temp_dentro %}
+              {% if temp_dentro - temp_fora >= (temp_tolerancia_max / 2) %}
+                {% set conselho = fechar %}
+              {% else %}
+                {% set conselho = indiferente %}
+              {% endif %}
+            {% else %}
+              {% if temp_fora - temp_dentro >= (temp_tolerancia_max / 2) %}
+                {% set conselho = abrir %}
+              {% else %}
+                {% set conselho = indiferente %}
+              {% endif %}
+            {% endif %}
+          {% else %} {## Mendos de DTMIN frio ##}
+            {% set conselho = indiferente %}
+          {% endif %}
+        {% else %} {## Mais CALOR no Exterior ##}
+          {% if (temp_fora - temp_alvo) >= temp_tolerancia_max %} {## Mais de DTMAX quente ##}
+            {% if temp_fora >= temp_dentro %}
+              {% if temp_fora - temp_dentro >= (temp_tolerancia_max / 2) %}
+                {% set conselho = fechar %}
+              {% else %}
+                {% set conselho = indiferente %}
+              {% endif %}
+            {% else %}
+              {% if temp_dentro - temp_fora >= (temp_tolerancia_max / 2) %}
+                {% set conselho = abrir %}
+              {% else %}
+                {% set conselho = indiferente %}
+              {% endif %}
+            {% endif %}
+          {% elif (temp_alvo - temp_fora) >= (temp_tolerancia_max / 2) %} {## Entre DTMIN e DTMAX quente ##}
+            {% if temp_fora >= temp_dentro %}
+              {% if temp_fora - temp_dentro >= (temp_tolerancia_max / 2) %}
+                {% set conselho = fechar %}
+              {% else %}
+                {% set conselho = indiferente %}
+              {% endif %}
+            {% else %}
+              {% if temp_dentro - temp_fora >= (temp_tolerancia_max / 2) %}
+                {% set conselho = abrir %}
+              {% else %}
+                {% set conselho = indiferente %}
+              {% endif %}
+            {% endif %}
+          {% else %} {## Mendos de DTMIN quente ##}
+            {% set conselho = indiferente %}
+          {% endif %}
+        {% endif %}
+        {## SE Temperatura "indiferente", verificar pela humidade: ##}
+        {% if conselho == indiferente %}
+          {% if humid_dentro - humid_fora >= humid_tolerancia_max %}
+            {% if humid_dentro - humid_alvo >= (humid_tolerancia_max / 2) %}
+              {% set conselho = abrir %}
+            {% endif %}
+          {% elif humid_fora - humid_dentro >= humid_tolerancia_max %}
+            {% if humid_dentro - humid_alvo >= (humid_tolerancia_max / 2) %}
+              {% set conselho = abrir %}
+            {% endif %}
+          {% endif %}
+        {% endif %}
+        {## RETORNO: ##}
+        {% if (conselho == abrir) and (states('binary_sensor.porta_cozinha_contact') != 'on') %}
+        {% elif (conselho == fechar) and (states('binary_sensor.porta_cozinha_contact') != 'off') %}
+        {% else %}
+          {% set conselho = "OK" %}
+        {% endif %}
+        {{ conselho }}
+      icon_template: >-
+        {% set abrir = "ABRIR" %}
+        {% set fechar = "FECHAR" %}
+        {% if states('sensor.conselho_porta_cozinha') == fechar %}
+          mdi:door-closed
+        {% elif states('sensor.conselho_porta_cozinha') == abrir %}
+          mdi:door-opened
+        {% else %}
+          mdi:approximately-equal
+        {% endif %}
+      attribute_templates:
+        Temperatura Alvo: "22.00 ºC"
+        Temperatura Exterior: "{{state_attr('weather.casa_da_soeira','temperature')|float(default=0)}} ºC"
+        Temperatura Interior: "{{states('sensor.ambiente_sala_temperature')|float(default=0)}} ºC"
+        Humidade Alvo: "55,0 %"
+        Humidade Exterior: "{{state_attr('weather.casa_da_soeira','humidity')|float(default=0)}} %"
+        Humidade Interior: "{{states('sensor.ambiente_sala_humidity')|float(default=0)}} %"
