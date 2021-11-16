@@ -14,8 +14,8 @@
         {% set humid_dentro = states('sensor.ambiente_sala_humidity')|float(default=0) %}
         {% set abrir = "ABRIR" %}
         {% set fechar = "FECHAR" %}
-        {% set indiferente = "Indiferente" %}
-        {## RESULTADO: Conselho: "Indiferente","ABRIR","FECHAR" ##}
+        {% set indiferente = "OK" %}
+        {## RESULTADO: Conselho: "OK","ABRIR","FECHAR" ##}
         {% set conselho = indiferente %}
         
         {## LÓGICA: ##}
